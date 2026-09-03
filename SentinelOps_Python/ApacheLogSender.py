@@ -32,7 +32,7 @@ class ApacheLogSender:
 			url = f"{self.method}://{self.ip}:{self.port}{self.path}"
 			
 			try:
-				response = requests.post(url, json=self.content)
+				response = requests.post(url, json=self.content, timeout=5)
 				response.raise_for_status()
 				self.content.clear() #Clear to the next Send call -- Limpa para a próxima chamada
 				return (True, response.json())
