@@ -1,5 +1,10 @@
 import unittest
 import json
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from ApacheLogConverter import ApacheLogConverter
 
 class TestApacheLogConverter(unittest.TestCase):
