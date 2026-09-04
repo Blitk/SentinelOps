@@ -204,7 +204,9 @@ SentinelOps/
 │   ├── ApacheLogLoader.py
 │   ├── ApacheLogConverter.py
 │   ├── ApacheLogSender.py
+|   ├── SentinelOps.py
 │   └── tests/
+│   └── testsTools/
 │
 ├── SentinelOps_Java/
 │   ├── controller/
@@ -244,8 +246,8 @@ A estrutura poderá evoluir conforme novos módulos forem implementados.
 - [ ] Definir modelo de Security Event
 - [ ] Implementar persistência PostgreSQL
 - [x] Implementar Python Agent
-- [ ] Criar parser de logs Apache
-- [ ] Implementar comunicação Python → API
+- [x] Criar parser de logs Apache
+- [x] Implementar comunicação Python → API
 
 ### Detection
 - [ ] Criar DetectionRule
