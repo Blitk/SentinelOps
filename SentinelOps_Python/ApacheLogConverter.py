@@ -37,7 +37,7 @@ class ApacheLogConverter:
 		    log_dict["status"] = int(log_dict["status"])
 		    log_dict["size"] = int(log_dict["size"])
 		    
-		    return json.dumps(log_dict, indent=4, ensure_ascii=False)
+		    return log_dict
 		    
 		else:
 		    return False
@@ -53,7 +53,7 @@ class ApacheLogConverter:
 
 			js = self.convertLine(line)
 			if js == False:
-				pass
+				continue
 
 			else:
 				data.append(js)

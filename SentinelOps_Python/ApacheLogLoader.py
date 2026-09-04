@@ -22,6 +22,7 @@ class ApacheLogLoader:
 		self.logPath = logPath
 		self.logContent = list()
 		self.lastLogLineLoaded = ""
+		self.lastPosition = 0
 
 
 	# Testa a existência do arquivo
@@ -41,35 +42,36 @@ class ApacheLogLoader:
 			return True
 
 
-	# Carrega as ultimas 5 linhas do log
-	# Load the last 5 lines
+	# Carrega TODOS os novos logs desde a última leitura
+	# Loads ALL new logs since the last read
 	def loadLog(self):
 
 		if self.fileExists() and not self.isEmpty():
 			self.logContent.clear()
+			
 			with open(self.logPath, "r", encoding="utf-8") as log:
-
-				lastFive = deque(log, maxlen=5)
-				for line in lastFive:
+				# Vai para a última posição lida (na primeira execução, vai para o início 0)
+				log.seek(self.lastPosition)
+				
+				# Lê apenas as linhas novas a partir dali
+				for line in log:
 					self.logContent.append(line)
+				
+				# Atualiza o ponteiro para o final atual do ficheiro
+				self.lastPosition = log.tell()
 
-				self.lastLogLineLoaded = self.logContent[ len(self.logContent) - 1 ]
-
-
-	# Verifica se mudou desde o ultimo carregamento
-	# Verify if changes since last load
-	def hasChanged(self):
-		if self.lastLogLineLoaded != "":
-			with open(self.logPath, "r", encoding="utf-8") as log:
-
-				last = deque(log, maxlen=1)
-
-				# Se o deque não estiver vazio, extrai a string de dentro dele
-				last_line = last[0] if last else ""
-
-				if last_line != self.lastLogLineLoaded:
+				if self.logContent:
+					self.lastLogLineLoaded = self.logContent[-1]
 					return True
-				else:
-					return False
-		else:
-			return False
+
+		return False
+
+
+	#Verifica de forma eficiente se o tamanho do ficheiro aumentou.
+	def hasChanged(self):
+		
+		if self.fileExists():
+			current_size = os.path.getsize(self.logPath)
+			# Se o tamanho atual for maior que o último ponteiro salvo, há novos logs
+			return current_size > self.lastPosition
+		return False

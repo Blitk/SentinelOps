@@ -44,45 +44,51 @@ class TestApacheLogLoader(unittest.TestCase):
 
     @patch('os.path.getsize')
     @patch('os.path.exists')
-    def test_load_log_reads_last_five_lines(self, mock_exists, mock_getsize):
-        """Testa se loadLog carrega no máximo as últimas 5 linhas do arquivo."""
+    def test_load_log_reads_all_new_lines(self, mock_exists, mock_getsize):
+        """Testa se loadLog carrega todas as linhas do ficheiro e não deixa passar nenhuma."""
         mock_exists.return_value = True
         mock_getsize.return_value = 500
 
-        ### Simula um log com 7 linhas
-
+        # Simula um log com 7 linhas (o antigo limitaria a 5)
         log_data = "linha1\nlinha2\nlinha3\nlinha4\nlinha5\nlinha6\nlinha7\n"
 
         with patch('builtins.open', mock_open(read_data=log_data)):
             loader = ApacheLogLoader("exemplo.log")
             loader.loadLog()
 
-        # Deve conter apenas as últimas 5 linhas
-        self.assertEqual(len(loader.logContent), 5)
-        self.assertEqual(loader.logContent[0], "linha3\n")
+        # Deve conter TODAS as 7 linhas para não perder dados importantes
+        self.assertEqual(len(loader.logContent), 7)
+        self.assertEqual(loader.logContent[0], "linha1\n")
         self.assertEqual(loader.logContent[-1], "linha7\n")
         self.assertEqual(loader.lastLogLineLoaded, "linha7\n")
 
-
+    @patch('os.path.getsize')
     @patch('os.path.exists')
-    def test_has_changed_true(self, mock_exists):
-        """Testa se hasChanged detecta quando novas linhas são adicionadas."""
+    def test_has_changed_true(self, mock_exists, mock_getsize):
+        """Testa se hasChanged detecta quando o ficheiro aumenta de tamanho (novos logs)."""
         mock_exists.return_value = True
+        
         loader = ApacheLogLoader("exemplo.log")
-        loader.lastLogLineLoaded = "linha7\n"
+        loader.lastPointer = 500  # Simula que já lemos até o byte 500
 
-        # Simula que a última linha agora mudou para 'linha8'
-        with patch('builtins.open', mock_open(read_data="linha8\n")):
-            self.assertTrue(loader.hasChanged())
+        # Simula que o tamanho do ficheiro cresceu para 1000 bytes no disco
+        mock_getsize.return_value = 1000
+        
+        self.assertTrue(loader.hasChanged())
 
+    @patch('os.path.getsize')
     @patch('os.path.exists')
-    def test_has_changed_false(self, mock_exists):
-        """Testa se hasChanged retorna False se a última linha continuar igual."""
+    def test_has_changed_false(self, mock_exists, mock_getsize):
+        """Testa se hasChanged retorna False se o ficheiro não cresceu."""
         mock_exists.return_value = True
+        
         loader = ApacheLogLoader("exemplo.log")
-        loader.lastLogLineLoaded = "linha7\n"
-        with patch('builtins.open', mock_open(read_data="linha7\n")):
-            self.assertFalse(loader.hasChanged())
+        loader.lastPointer = 500  # Parou no byte 500
+
+        # Simula que o ficheiro continua exatamente com 500 bytes no disco
+        mock_getsize.return_value = 500
+        
+        self.assertFalse(loader.hasChanged())
 
 
 if __name__ == "__main__":

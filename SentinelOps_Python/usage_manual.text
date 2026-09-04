@@ -1,0 +1,54 @@
+## SentinelOps_Python_Client - User Manual
+SentinelOps is a real-time log monitoring tool designed to track Apache log files, parse their contents, and send them asynchronously to a specified API endpoint.
+## Features
+
+* Real-time Monitoring: Continuously checks for file changes every 2 seconds.
+* Asynchronous Processing: Converts and forwards logs to an external API without blocking the monitoring thread.
+* Configurable Target: Customize the target API IP, port, path, and protocol.
+
+## Prerequisites
+Before running the script, ensure you have the required dependencies and modules in your directory:
+
+* ApacheLogLoader
+* ApacheLogSender
+* ApacheLogConverter
+
+## Command-Line Arguments
+The script accepts the following parameters:
+*-----------------------------------------------------------------------------------------*
+| Argument | Long Flag |                Description            | Default Value | Required |
+|----------|-----------|---------------------------------------|---------------|----------|
+|   -lp    | --logpath | Absolute path to the Apache log file. |     None      |    Yes   |
+|   -ip    | --ip      | The IP address of the target API.     |     127.0.0.1 |    No    |
+|   -pt    | --port    | The port of the target API.           |     8080      |    No    |
+|   -ph    | --path    | The endpoint path of the API.         |     /         |    No    |
+|   -mt    | --method  | The protocol/method used.             |     http      |    No    |
+*-----------------------------------------------------------------------------------------*
+
+## Usage Examples## Basic Usage
+To monitor a log file using the default local API setup (http://127.0.0):
+
+python sentinelops.py -lp /var/log/apache2/access.log
+
+## Advanced Usage
+To forward logs to a remote production API with a custom endpoint:
+
+python sentinelops.py -lp /var/log/apache2/access.log -ip 192.168.1.50 -pt 9000 -ph /api/v1/logs -mt https
+
+## How It Works Under the Hood
+
+   1. Initialization: The script validates that the specified log file exists. If missing, it exits with an error.
+   2. First Load: It processes the existing file lines to set a baseline and avoids sending historical data immediately.
+   3. The Loop (Every 2 Seconds):
+   * Checks if the log file size on disk has changed.
+      * If changes are detected, it reads the new entries.
+      * Converts the log lines into the target API format.
+      * Spawns an asynchronous sender thread to post the data safely without stopping the file monitoring.
+   
+If you want, I can:
+
+* Create a README.md file structure with setup instructions
+* Add error handling code to prevent crashes if the API goes down
+* Write a systemd service configuration to run this automatically in the background
+
+
