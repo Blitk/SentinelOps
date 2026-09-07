@@ -4,6 +4,8 @@ import time
 from ApacheLogLoader import ApacheLogLoader
 from ApacheLogSender import ApacheLogSender, callback_api
 from ApacheLogConverter import ApacheLogConverter
+import miscelanious
+
 
 parser = argparse.ArgumentParser(description="SentinelOps")
 
@@ -15,8 +17,8 @@ parser.add_argument("-mt", default="http", help="API's method")
 
 args = parser.parse_args()
 
-print(f"Monitorizando o ficheiro: {args.lp}")
-print(f"Destino da API: {args.mt}://{args.ip}:{args.pt}{args.ph}")
+
+miscelanious.show(miscelanious.LOGO, args.lp, f"{args.mt}://{args.ip}:{args.pt}{args.ph}")
 
 loader = ApacheLogLoader(args.lp)
 
@@ -54,3 +56,8 @@ while True:
     # 3. Verifica se o ficheiro cresceu no disco
     if loader.hasChanged():
         loader.loadLog()
+
+
+
+
+
