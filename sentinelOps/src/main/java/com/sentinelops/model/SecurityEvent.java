@@ -29,7 +29,7 @@ public class SecurityEvent {
 	
 	private Integer statuscode;
 	
-	private String Source;
+	private String source;
 	
 	private Instant receivedAt;
 	
