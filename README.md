@@ -242,9 +242,9 @@ A estrutura poderá evoluir conforme novos módulos forem implementados.
 ## 🗺️ Roadmap
 
 ### Core
-- [ ] Criar API Spring Boot
-- [ ] Definir modelo de Security Event
-- [ ] Implementar persistência PostgreSQL
+- [x] Criar API Spring Boot
+- [x] Definir modelo de Security Event
+- [x] Implementar persistência PostgreSQL
 - [x] Implementar Python Agent
 - [x] Criar parser de logs Apache
 - [x] Implementar comunicação Python → API
