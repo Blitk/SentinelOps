@@ -50,13 +50,17 @@ public class SecurityEventService {
 		
 		SecurityEvent event = new SecurityEvent();
 		
-		event.setTimestamp(request.timestamp());
-		event.setSourceip(request.sourceip());
-		event.setMethod(request.method());
-		event.setPath(request.path());
-		event.setStatuscode(request.statuscode());
-		event.setSource(request.source());
-		event.setReceivedAt(Instant.now());
+		event.setSourceip(request.sourceip().trim());
+
+        event.setMethod(request.method().trim().toUpperCase());
+
+        event.setPath(request.path().trim());
+
+        event.setStatuscode(request.statuscode());
+        
+		event.setSource(request.source().trim().toUpperCase());
+
+        event.setReceivedAt(Instant.now());
 		
 		return event;
 		
