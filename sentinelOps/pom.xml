@@ -14,7 +14,7 @@
 	<artifactId>sentinel-ops</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>sentinelOps</name>
-	<description>Sistema para gestão de renda variável</description>
+	<description>Mini SIEM for security event collection, analysis and detection</description>
 	
 	<properties>
 		<java.version>21</java.version>
