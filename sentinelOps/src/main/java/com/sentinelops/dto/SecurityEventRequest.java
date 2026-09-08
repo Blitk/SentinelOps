@@ -27,10 +27,7 @@ public record SecurityEventRequest(
 		Integer statuscode,
 		
 		@NotBlank
-		String source,
-		
-		@NotNull
-		Instant receivedAt
+		String source
 		
 		) {
 
