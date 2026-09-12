@@ -209,12 +209,15 @@ SentinelOps/
 │   └── testsTools/
 │
 ├── SentinelOps_Java/
+│   ├── config/
 │   ├── controller/
-│   ├── service/
-│   ├── domain/
-│   ├── repository/
 │   ├── detection/
-│   └── configuration/
+│        ├── rules/
+│   ├── service/
+│   ├── dto/
+│   ├── repository/
+│   ├── exception/
+│   └── model/
 │
 ├── docs/
 └── README.md
@@ -250,15 +253,15 @@ A estrutura poderá evoluir conforme novos módulos forem implementados.
 - [x] Implementar comunicação Python → API
 
 ### Detection
-- [ ] Criar DetectionRule
-- [ ] Implementar DetectionEngine
-- [ ] Brute Force Detection
-- [ ] Suspicious Login Detection
-- [ ] Request Rate Detection
-- [ ] Suspicious User-Agent Detection
-- [ ] Sistema de severidade
-- [ ] Alert Management
-- [ ] Correlation / Incidents
+- [x] Criar DetectionRule
+- [x] Implementar DetectionEngine
+- [x] Brute Force Detection
+- [x] Suspicious Login Detection
+- [x] Request Rate Detection
+- [x] Suspicious User-Agent Detection
+- [x] Sistema de severidade
+- [x] Alert Management
+- [x] Correlation / Incidents
 
 ### Infraestrutura
 - [ ] Implementar Redis
