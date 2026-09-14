@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sentinelops.detection.DetectionEngine;
+import com.sentinelops.detection.DetectionResult;
 import com.sentinelops.dto.SecurityEventRequest;
 import com.sentinelops.exception.InvalidSecurityEventException;
 import com.sentinelops.model.SecurityEvent;
@@ -18,8 +20,20 @@ import com.sentinelops.repository.SecurityEventRepository;
 @Service
 public class SecurityEventService {
 	
-	@Autowired
-	private SecurityEventRepository repository;
+	
+	private final SecurityEventRepository repository;
+	
+	private final DetectionEngine detectionEngine;
+	
+	private final AlertService alertService;
+	
+	public SecurityEventService(SecurityEventRepository repository, DetectionEngine detectionEngine, AlertService alertService) {
+		
+		this.repository = repository;
+		this.detectionEngine = detectionEngine;
+		this.alertService = alertService;
+		
+	}
 	
 	private void validate(SecurityEventRequest request) {
 		if(request==null) {
@@ -39,6 +53,9 @@ public class SecurityEventService {
 		}
 		if(request.statuscode() < 100 || request.statuscode() > 599) {
 			throw new InvalidSecurityEventException("Invalid status code");
+		}
+		if(request.statuscode() == null) {
+			throw new InvalidSecurityEventException("Status code is required");
 		}
 		if(request.source()==null || request.source().isBlank()) {
 			throw new InvalidSecurityEventException("Event source is required");
@@ -68,9 +85,24 @@ public class SecurityEventService {
 	
 	@Transactional
 	public SecurityEvent receiveEvent(SecurityEventRequest request) {
+		
 		validate(request);
+		
 		SecurityEvent event = normalize(request);
-		return repository.save(event);
+		
+		SecurityEvent savedEvent = repository.save(event);
+		
+		List<SecurityEvent> recentEvents = repository.findTop100ByOrderByTimestampDesc();
+		
+		List<DetectionResult> results = detectionEngine.analyze(recentEvents);
+		
+		for(DetectionResult result : results) {
+			
+			alertService.createAlert(result, savedEvent);
+			
+		}
+		
+		return savedEvent;
 	}
 	
 	@Transactional(readOnly = true)

@@ -1,10 +1,13 @@
 package com.sentinelops.detection.rules;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
 import com.sentinelops.detection.DetectionResult;
+import com.sentinelops.detection.DetectionRule;
 import com.sentinelops.model.SecurityEvent;
 import com.sentinelops.model.Severity;
 
@@ -16,7 +19,7 @@ public class BruteForceRule implements DetectionRule{
 	private static final int FAILURE_THRESHOLD = 5;
 	
 	@Override
-	public String GetName() {
+	public String getName() {
 		
 		return RULE_NAME;
 		
@@ -31,17 +34,27 @@ public class BruteForceRule implements DetectionRule{
 			
 		}
 		
-		long failedRequests = events.stream()
+		Map<String, Long> failedAttemptsByIp = events.stream()
 				.filter(event -> event != null)
+				.filter(event -> event.getStatuscode() != null)
 				.filter(event -> event.getStatuscode() == 401)
-				.count();
-		
-		if(failedRequests >= FAILURE_THRESHOLD) {
-			
-			return DetectionResult.detected(RULE_NAME, Severity.HIGH, "Possible brute-force attack detected: "+failedRequests+" unauthorized requests.");
-		}
-		
-		return DetectionResult.notDetected(RULE_NAME);
+				.filter(event -> event.getSourceip() != null)
+				.collect(Collectors.groupingBy(SecurityEvent::getSourceip, Collectors.counting()));
+				
+		return failedAttemptsByIp.entrySet()
+				.stream()
+				.filter(entry -> entry.getValue() >= FAILURE_THRESHOLD)
+				.findFirst()
+				.map(entry -> DetectionResult.detected(
+						RULE_NAME,
+						Severity.HIGH,
+						"Possible Brute-Force attack detected from IP "
+						+entry.getKey()
+						+" with "
+						+entry.getValue()
+						+" failed authentication attempts."
+				))
+				.orElseGet(() -> DetectionResult.notDetected(RULE_NAME));
 		
 	}
 	;

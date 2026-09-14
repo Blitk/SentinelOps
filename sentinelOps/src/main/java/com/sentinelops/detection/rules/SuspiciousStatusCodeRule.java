@@ -1,5 +1,7 @@
 package com.sentinelops.detection.rules;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.sentinelops.detection.DetectionResult;
@@ -20,15 +22,19 @@ public class SuspiciousStatusCodeRule implements DetectionRule{
 	}
 	
 	@Override
-	public DetectionResult evaluate(SecurityEvent event) {
+	public DetectionResult evaluate(List<SecurityEvent> events) {
 		
-		if(event == null || event.getStatuscode() == null) {
+		if(events == null || events.isEmpty()) {
 			
 			return DetectionResult.notDetected(RULE_NAME);
 			
 		}
 		
-		if(event.getStatusCode() == 401) {
+		boolean detected = events.stream()
+				.filter(event -> event != null)
+				.anyMatch(event -> event.getStatuscode() == 401);
+		
+		if(detected) {
 			
 			return DetectionResult.detected(RULE_NAME, Severity.MEDIUM, "Unauthorized request detected.");
 			
