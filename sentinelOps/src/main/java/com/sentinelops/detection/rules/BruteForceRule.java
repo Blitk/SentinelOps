@@ -49,10 +49,12 @@ public class BruteForceRule implements DetectionRule{
 						RULE_NAME,
 						Severity.HIGH,
 						"Possible Brute-Force attack detected from IP "
-						+entry.getKey()
-						+" with "
-						+entry.getValue()
-						+" failed authentication attempts."
+							+entry.getKey()
+							+" with "
+							+entry.getValue()
+							+" failed authentication attempts.",
+						entry.getKey()
+
 				))
 				.orElseGet(() -> DetectionResult.notDetected(RULE_NAME));
 		

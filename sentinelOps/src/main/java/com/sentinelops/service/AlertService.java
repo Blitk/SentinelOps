@@ -13,15 +13,30 @@ import com.sentinelops.repository.AlertRepository;
 @Service
 public class AlertService {
 	
+	private static final long COOLDOWN_SECONDS = 300;
+
 	private final AlertRepository repository;
+
+	private final AlertCooldownService cooldownService;
 	
-	public AlertService(AlertRepository repository) {
+	public AlertService(AlertRepository repository, AlertCooldownService cooldownService) {
 		
+		this.cooldownService = cooldownService;
+
 		this.repository = repository;
 	}
 	
 	public Alert createAlert(DetectionResult result, SecurityEvent event) {
 		
+		String cooldownKey = buildCooldownKey(result);
+
+		boolean cooldownStarted = cooldownService.startCooldown(cooldownKey, COOLDOWN_SECONDS);
+
+		if(!cooldownStarted){
+
+			return null;
+		}
+
 		Alert alert = new Alert();
 		
 		alert.setCreatedAt(Instant.now());
@@ -30,9 +45,23 @@ public class AlertService {
 		alert.setDescription(result.description())
 		alert.setStatus(AlertStatus.OPEN);
 		alert.setSecurityEvent(event);
-		
+
 		return repository.save(alert);
 		
+	}
+
+	private String buildCooldownKey(DetectionResult result){
+
+		String sourceip = result.sourceip();
+
+		if(sourceip == null || sourceip.isBlank()){
+
+			sourceip = "global";
+
+		}
+
+		return "sentinelops:alert:"+result.rule()+":"+sourceip;
+
 	}
 	
 }

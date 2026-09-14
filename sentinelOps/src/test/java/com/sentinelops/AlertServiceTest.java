@@ -1,12 +1,12 @@
 package com.sentinelops.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,29 +27,21 @@ class AlertServiceTest {
     @Mock
     private AlertRepository repository;
 
-    @Mock
-    private AlertCooldownService cooldownService;
-
     @InjectMocks
     private AlertService alertService;
 
     @Test
-    void shouldCreateAlertWhenThereIsNoCooldown() {
+    void shouldCreateAlertFromDetectionResult() {
 
         DetectionResult result = DetectionResult.detected(
                 "BruteForceRule",
                 Severity.HIGH,
-                "Possible brute-force attack detected.",
-                "192.168.1.10"
+                "Possible brute-force attack detected."
         );
 
         SecurityEvent event = new SecurityEvent();
 
         Alert savedAlert = new Alert();
-
-        when(cooldownService.isInCooldown(
-                "sentinelops:alert:BruteForceRule:192.168.1.10"
-        )).thenReturn(false);
 
         when(repository.save(any(Alert.class)))
                 .thenReturn(savedAlert);
@@ -59,39 +51,6 @@ class AlertServiceTest {
         assertSame(savedAlert, resultAlert);
 
         verify(repository).save(any(Alert.class));
-
-        verify(cooldownService).startCooldown(
-                "sentinelops:alert:BruteForceRule:192.168.1.10",
-                300
-        );
-    }
-
-    @Test
-    void shouldNotCreateAlertWhenCooldownIsActive() {
-
-        DetectionResult result = DetectionResult.detected(
-                "BruteForceRule",
-                Severity.HIGH,
-                "Possible brute-force attack detected.",
-                "192.168.1.10"
-        );
-
-        SecurityEvent event = new SecurityEvent();
-
-        when(cooldownService.isInCooldown(
-                "sentinelops:alert:BruteForceRule:192.168.1.10"
-        )).thenReturn(true);
-
-        Alert resultAlert = alertService.createAlert(result, event);
-
-        assertNull(resultAlert);
-
-        verify(repository, never()).save(any(Alert.class));
-
-        verify(cooldownService, never()).startCooldown(
-                any(String.class),
-                any(Long.class)
-        );
     }
 
     @Test
@@ -100,43 +59,23 @@ class AlertServiceTest {
         DetectionResult result = DetectionResult.detected(
                 "SuspiciousStatusCodeRule",
                 Severity.MEDIUM,
-                "Unauthorized request detected.",
-                "192.168.1.20"
+                "Unauthorized request detected."
         );
 
         SecurityEvent event = new SecurityEvent();
-
-        when(cooldownService.isInCooldown(any(String.class)))
-                .thenReturn(false);
 
         when(repository.save(any(Alert.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Alert alert = alertService.createAlert(result, event);
 
-        assertEquals(
-                "SuspiciousStatusCodeRule",
-                alert.getRule()
-        );
-
-        assertEquals(
-                Severity.MEDIUM,
-                alert.getSeverity()
-        );
-
+        assertEquals("SuspiciousStatusCodeRule", alert.getRule());
+        assertEquals(Severity.MEDIUM, alert.getSeverity());
         assertEquals(
                 "Unauthorized request detected.",
                 alert.getDescription()
         );
-
-        assertEquals(
-                AlertStatus.OPEN,
-                alert.getStatus()
-        );
-
-        assertSame(
-                event,
-                alert.getSecurityEvent()
-        );
+        assertEquals(AlertStatus.OPEN, alert.getStatus());
+        assertSame(event, alert.getSecurityEvent());
     }
 }

@@ -30,17 +30,13 @@ public class SuspiciousStatusCodeRule implements DetectionRule{
 			
 		}
 		
-		boolean detected = events.stream()
-				.filter(event -> event != null)
-				.anyMatch(event -> event.getStatuscode() == 401);
-		
-		if(detected) {
-			
-			return DetectionResult.detected(RULE_NAME, Severity.MEDIUM, "Unauthorized request detected.");
-			
-		}
-		
-		return DetectionResult.notDetected(RULE_NAME);
+		return events.stream()
+			.filter(event -> event != null)
+			.filter(event -> event.getStatuscode() != null)
+			.filter(event -> event.getStatuscode() == 401)
+			.findFirst()
+			.map(event -> DetectionResult.detected(RULE_NAME, Severity.MEDIUM, "Unathorized request detected.", event.getSourceip()))
+			.orElseGet(() -> DetectionResult.notDetected(RULE_NAME));
 		
 	}
 	
