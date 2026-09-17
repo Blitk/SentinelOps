@@ -2,6 +2,7 @@ package com.sentinelops.detection;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.sentinelops.model.SecurityEvent;
@@ -11,6 +12,7 @@ public class DetectionEngine {
 	
 	private final List<DetectionRule> rules;
 	
+	@Autowired
 	public DetectionEngine(List<DetectionRule> rules) {
 		
 		this.rules = rules;
@@ -21,7 +23,7 @@ public class DetectionEngine {
 		
 		return rules.stream()
 				.map(rule -> rule.evaluate(events))
-				.filter(DetectionResult::detected)
+				.filter(result -> result.detected())
 				.toList();
 		
 	}

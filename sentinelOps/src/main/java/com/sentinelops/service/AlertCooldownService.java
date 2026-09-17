@@ -24,7 +24,7 @@ public class AlertCooldownService{
 
 	public boolean startCoolDown(String key, long seconds){
 
-		redisTemplate.opsForValue().setIfAbsent(key, "1", Duration.ofSeconds(seconds));
+		boolean created = redisTemplate.opsForValue().setIfAbsent(key, "1", Duration.ofSeconds(seconds));
 
 		return Boolean.TRUE.equals(created);
 

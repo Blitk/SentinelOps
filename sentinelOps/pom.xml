@@ -59,11 +59,10 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Redução de código boilerplate (Getters/Setters automáticos) -->
 		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
+		    <groupId>org.projectlombok</groupId>
+		    <artifactId>lombok</artifactId>
+		    <optional>true</optional>
 		</dependency>
 
 		<!-- Starter unificado para Testes (JUnit, Mockito, etc.) -->
@@ -76,6 +75,12 @@
 		<dependency>
 		    <groupId>org.springframework.boot</groupId>
 		    <artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>spring-dotenv</artifactId>
+			<version>4.0.0</version>
 		</dependency>
 	</dependencies>
 

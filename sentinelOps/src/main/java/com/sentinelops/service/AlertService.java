@@ -30,7 +30,7 @@ public class AlertService {
 		
 		String cooldownKey = buildCooldownKey(result);
 
-		boolean cooldownStarted = cooldownService.startCooldown(cooldownKey, COOLDOWN_SECONDS);
+		boolean cooldownStarted = cooldownService.startCoolDown(cooldownKey, COOLDOWN_SECONDS);
 
 		if(!cooldownStarted){
 

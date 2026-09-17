@@ -18,6 +18,10 @@ public class BruteForceRule implements DetectionRule{
 	
 	private static final int FAILURE_THRESHOLD = 5;
 	
+	public BruteForceRule() {
+		
+	}
+	
 	@Override
 	public String getName() {
 		
@@ -59,5 +63,5 @@ public class BruteForceRule implements DetectionRule{
 				.orElseGet(() -> DetectionResult.notDetected(RULE_NAME));
 		
 	}
-	;
+	
 }

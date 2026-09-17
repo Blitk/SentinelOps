@@ -1,4 +1,4 @@
-package com.sentinelops.service;
+package com.sentinelops;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -15,6 +15,8 @@ import com.sentinelops.model.AlertStatus;
 import com.sentinelops.model.SecurityEvent;
 import com.sentinelops.model.Severity;
 import com.sentinelops.repository.AlertRepository;
+import com.sentinelops.service.AlertCooldownService;
+import com.sentinelops.service.AlertService;
 
 @ExtendWith(MockitoExtension.class)
 class AlertServiceTest {
@@ -43,7 +45,7 @@ class AlertServiceTest {
                 401
         );
 
-        when(cooldownService.startCooldown(
+        when(cooldownService.startCoolDown(
                 "sentinelops:alert:BruteForceRule:192.168.1.10",
                 300
         )).thenReturn(true);
@@ -78,10 +80,7 @@ class AlertServiceTest {
                 401
         );
 
-        when(cooldownService.startCooldown(
-                "sentinelops:alert:BruteForceRule:192.168.1.10",
-                300
-        )).thenReturn(false);
+        when(cooldownService.startCoolDown("sentinelops:alert:BruteForceRule:192.168.1.10",300)).thenReturn(false);
 
         Alert alert = alertService.createAlert(result, event);
 
@@ -105,7 +104,7 @@ class AlertServiceTest {
                 401
         );
 
-        when(cooldownService.startCooldown(
+        when(cooldownService.startCoolDown(
                 "sentinelops:alert:SuspiciousStatusCodeRule:global",
                 300
         )).thenReturn(true);
@@ -114,7 +113,7 @@ class AlertServiceTest {
 
         assertNotNull(alert);
 
-        verify(cooldownService).startCooldown(
+        verify(cooldownService).startCoolDown(
                 "sentinelops:alert:SuspiciousStatusCodeRule:global",
                 300
         );
@@ -137,7 +136,7 @@ class AlertServiceTest {
                 401
         );
 
-        when(cooldownService.startCooldown(
+        when(cooldownService.startCoolDown(
                 "sentinelops:alert:SuspiciousStatusCodeRule:global",
                 300
         )).thenReturn(true);
@@ -146,7 +145,7 @@ class AlertServiceTest {
 
         assertNotNull(alert);
 
-        verify(cooldownService).startCooldown(
+        verify(cooldownService).startCoolDown(
                 "sentinelops:alert:SuspiciousStatusCodeRule:global",
                 300
         );
@@ -160,8 +159,8 @@ class AlertServiceTest {
 
         SecurityEvent event = new SecurityEvent();
 
-        event.setSourceIp(sourceIp);
-        event.setStatusCode(statusCode);
+        event.setSourceip(sourceIp);
+        event.setStatuscode(statusCode);
 
         return event;
     }
