@@ -2,64 +2,60 @@ import json
 import re
 
 """
-
-Converte um arquivo ou uma linha de um output Apache acess.log em JSON
-Converts a file or an output line from an Apache `access.log` to JSON.
-
+Converte um arquivo ou uma linha de um output Apache access.log em JSON.
+Converts a file or an output line from an Apache access.log to JSON.
 """
+
 class ApacheLogConverter:
 
-	# Define o padrão Regex para capturar os campos
-	# Defines the Regex pattern to capture the fields
-	def __init__(self):
+    # Define o padrão Regex para capturar os campos
+    # Defines the Regex pattern to capture the fields
+    def __init__(self):
 
-		self.pattern = re.compile(
-		    r'(?P<ip>\S+)\s+\S+\s+\S+\s+\['
-		    r'(?P<datetime>[^\]]+)\]\s+"'
-		    r'(?P<method>\S+)\s+(?P<url>\S+)\s+(?P<protocol>[^"]+)"\s+'
-		    r'(?P<status>\d+)\s+'
-		    r'(?P<size>\d+)\s+"'
-		    r'(?P<referrer>[^"]*)"\s+"'
-		    r'(?P<user_agent>[^"]*)"'
-		)
+        self.pattern = re.compile(
+            r'(?P<sourceip>\S+)\s+\S+\s+\S+\s+\['
+            r'(?P<datetime>[^\]]+)\]\s+"'
+            r'(?P<method>\S+)\s+(?P<url>\S+)\s+(?P<protocol>[^"]+)"\s+'
+            r'(?P<statuscode>\d+)\s+'
+            r'(?P<size>\d+)\s+"'
+            r'(?P<referrer>[^"]*)"\s+"'
+            r'(?P<user_agent>[^"]*)"'
+        )
 
+    # Converte uma linha do Log em JSON
+    # Convert one line of the log into JSON
+    def convertLine(self, content):
 
-	# Converte uma linha do Log em JSON
-	# Convert one line of the log into JSON
-	def convertLine(self, content):
+        match = self.pattern.match(content)
 
-		match = self.pattern.match(content)
+        if match:
 
-		if match:
+            log_dict = match.groupdict()
 
-		    log_dict = match.groupdict()
-		    
-		    log_dict["status"] = int(log_dict["status"])
-		    log_dict["size"] = int(log_dict["size"])
-		    
-		    return log_dict
-		    
-		else:
-		    return False
+            log_dict["statuscode"] = int(log_dict["statuscode"])
+            log_dict["size"] = int(log_dict["size"])
 
+            return log_dict
 
-	# Converte todo o conteúdo em JSON
-	# Converts all the content into JSON
-	def convertAll(self, content):
+        else:
+            return False
 
-		data = list()
+    # Converte todo o conteúdo em JSON
+    # Converts all the content into JSON
+    def convertAll(self, content):
 
-		for line in content:
+        data = list()
 
-			js = self.convertLine(line)
-			if js == False:
-				continue
+        for line in content:
 
-			else:
-				data.append(js)
+            js = self.convertLine(line)
 
-		if len(data) == 0:
-			return False
-		else:
-			return data
+            if js == False:
+                continue
 
+            data.append(js)
+
+        if len(data) == 0:
+            return False
+
+        return data

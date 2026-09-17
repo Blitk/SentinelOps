@@ -2,6 +2,7 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import json
 import os
 from pathlib import Path
+import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
