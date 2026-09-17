@@ -264,10 +264,10 @@ A estrutura poderá evoluir conforme novos módulos forem implementados.
 - [x] Correlation / Incidents
 
 ### Infraestrutura
-- [ ] Implementar Redis
-- [ ] Configurar persistência e cache
+- [x] Implementar Redis
+- [x] Configurar persistência e cache
 - [ ] Criar mecanismos de rate limiting
-- [ ] Implementar gerenciamento de estado das detecções
+- [x] Implementar gerenciamento de estado das detecções
 
 ### Interface
 - [ ] Dashboard
