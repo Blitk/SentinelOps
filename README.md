@@ -518,6 +518,17 @@ O objetivo é ampliar gradualmente a cobertura conforme novas funcionalidades s�
 ```text
 SentinelOps/
 │
+├── Scripts/
+│   ├── start-python.sh
+│   ├── start-spring.sh
+│   ├── start-all.sh
+│   ├── stop-all.sh
+│   ├── start-python.bat
+│   ├── start-spring.bat
+│   ├── start-all.bat
+│   ├── stop-all.bat
+│
+│
 ├── SentinelOps_Python/
 │   ├── ApacheLogLoader.py
 │   ├── ApacheLogConverter.py
