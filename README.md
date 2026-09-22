@@ -548,7 +548,7 @@ SentinelOps/
 │   ├── repository/
 │   ├── service/
 │   ├── specification/
-│   └── testes/
+│   └── tests/
 │
 ├── docs/
 └── README.md
