@@ -1,5 +1,6 @@
 package com.sentinelops.repository;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.time.Instant;
 import java.util.List;
 
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import com.sentinelops.model.SecurityEvent;
 
 @Repository
-public interface SecurityEventRepository extends JpaRepository<SecurityEvent, Long>{
+public interface SecurityEventRepository extends JpaRepository<SecurityEvent, Long>, JpaSpecificationExecutor<SecurityEvent>{
 
 	List<SecurityEvent> findTop100ByOrderByTimestampDesc();
 	

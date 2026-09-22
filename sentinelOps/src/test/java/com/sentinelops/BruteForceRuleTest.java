@@ -1,4 +1,4 @@
-package com.sentinelops.detection.rules;
+package com.sentinelops;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.sentinelops.detection.DetectionResult;
+import com.sentinelops.detection.rules.BruteForceRule;
 import com.sentinelops.model.SecurityEvent;
 import com.sentinelops.model.Severity;
 
