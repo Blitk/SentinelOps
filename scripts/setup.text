@@ -1,0 +1,215 @@
+========================================
+SENTINELOPS
+GUIA DE CONFIGURAÇÃO
+====================
+
+Este arquivo explica como configurar e executar o
+SentinelOps em ambientes Windows e Linux.
+
+O projeto possui scripts de inicialização para facilitar
+a execução dos componentes.
+
+Windows:
+scripts/
+├── start-python.bat
+├── start-spring.bat
+├── start-all.bat
+└── stop-all.bat
+
+Linux / WSL / Git Bash:
+scripts/
+├── start-python.sh
+├── start-spring.sh
+├── start-all.sh
+└── stop-all.sh
+
+========================================
+
+1. REQUISITOS
+   ========================================
+
+O SentinelOps utiliza:
+
+```
+- Java 17+
+- Spring Boot
+- Maven
+- Python 3
+- PostgreSQL
+- Redis
+- Memurai (Windows)
+- Git
+```
+
+Não é necessário instalar Maven globalmente caso o projeto
+possua o Maven Wrapper.
+
+Arquivos utilizados:
+
+```
+mvnw
+mvnw.cmd
+```
+
+========================================
+2. CLONANDO O PROJETO
+=====================
+
+Clone o repositório:
+
+```
+git clone https://github.com/Blitk/SentinelOps.git
+```
+
+Entre na pasta:
+
+```
+cd SentinelOps
+```
+
+========================================
+3. ESTRUTURA DOS SCRIPTS
+========================
+
+Os scripts ficam dentro de:
+
+```
+scripts/
+```
+
+---
+
+## WINDOWS
+
+```
+start-python.bat
+```
+
+Inicia o Python Agent.
+
+```
+start-spring.bat
+```
+
+Inicia o Spring Boot.
+
+```
+start-all.bat
+```
+
+Inicia o ambiente completo.
+
+```
+stop-all.bat
+```
+
+Encerra o Python Agent e o Spring Boot.
+
+---
+
+## LINUX / GIT BASH / WSL
+
+```
+start-python.sh
+```
+
+Inicia o Python Agent.
+
+```
+start-spring.sh
+```
+
+Inicia o Spring Boot.
+
+```
+start-all.sh
+```
+
+Inicia o ambiente completo.
+
+```
+stop-all.sh
+```
+
+Encerra os processos do SentinelOps.
+
+========================================
+4. JAVA
+=======
+
+O Spring Boot necessita de Java 17 ou superior.
+
+Verifique a instalação:
+
+```
+java -version
+```
+
+Exemplo:
+
+```
+java version "17.x.x"
+```
+
+ou superior.
+
+---
+
+## WINDOWS
+
+Configure o JAVA_HOME nas variáveis de ambiente caso
+necessário.
+
+Verifique:
+
+```
+echo %JAVA_HOME%
+```
+
+---
+
+## LINUX
+
+Verifique:
+
+```
+echo $JAVA_HOME
+```
+
+Caso necessário, configure o JAVA_HOME no ambiente.
+
+========================================
+5. PYTHON
+=========
+
+O SentinelOps possui um Python Agent responsável por
+processar os logs e enviar eventos para a API.
+
+Verifique:
+
+```
+python --version
+```
+
+No Linux:
+
+```
+python3 --version
+```
+
+---
+
+## WINDOWS
+
+O script:
+
+```
+scripts\start-python.bat
+```
+
+inicia automaticamente o Python Agent.
+
+Não é necessário executar o arquivo Python manualmente
+quando estiver utilizando os scripts.
+
+---
