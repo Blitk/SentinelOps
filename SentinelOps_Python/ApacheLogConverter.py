@@ -1,17 +1,10 @@
-import json
+from datetime import datetime
 import re
 
-"""
-Converte um arquivo ou uma linha de um output Apache access.log em JSON.
-Converts a file or an output line from an Apache access.log to JSON.
-"""
 
 class ApacheLogConverter:
 
-    # Define o padrão Regex para capturar os campos
-    # Defines the Regex pattern to capture the fields
     def __init__(self):
-
         self.pattern = re.compile(
             r'(?P<sourceip>\S+)\s+\S+\s+\S+\s+\['
             r'(?P<datetime>[^\]]+)\]\s+"'
@@ -22,35 +15,37 @@ class ApacheLogConverter:
             r'(?P<user_agent>[^"]*)"'
         )
 
-    # Converte uma linha do Log em JSON
-    # Convert one line of the log into JSON
     def convertLine(self, content):
-
         match = self.pattern.match(content)
 
-        if match:
-
-            log_dict = match.groupdict()
-
-            log_dict["statuscode"] = int(log_dict["statuscode"])
-            log_dict["size"] = int(log_dict["size"])
-
-            return log_dict
-
-        else:
+        if not match:
             return False
 
-    # Converte todo o conteúdo em JSON
-    # Converts all the content into JSON
-    def convertAll(self, content):
+        log_dict = match.groupdict()
 
-        data = list()
+        datetime_value = log_dict["datetime"].strip()
+
+        timestamp = datetime.strptime(
+            datetime_value,
+            "%d/%b/%Y:%H:%M:%S"
+        ).astimezone().isoformat()
+
+        return {
+            "timestamp": timestamp,
+            "sourceip": log_dict["sourceip"],
+            "method": log_dict["method"],
+            "path": log_dict["url"],
+            "statuscode": int(log_dict["statuscode"]),
+            "source": "APACHE"
+        }
+
+    def convertAll(self, content):
+        data = []
 
         for line in content:
-
             js = self.convertLine(line)
 
-            if js == False:
+            if js is False:
                 continue
 
             data.append(js)
