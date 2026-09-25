@@ -1,12 +1,14 @@
 # 🛡️ SentinelOps
 
-**Mini SIEM para coleta, processamento e detecção de eventos de segurança.**
+**Mini SIEM para coleta, processamento, detecção e gerenciamento de eventos de segurança.**
 
-O **SentinelOps** é um projeto prático de Backend, Cybersecurity e Security Engineering desenvolvido para explorar a construção de uma pipeline de monitoramento e detecção de eventos de segurança.
+O **SentinelOps** é um projeto prático de Backend, Cybersecurity e Security Engineering desenvolvido para explorar, na prática, a construção de uma pipeline de monitoramento e detecção de eventos de segurança.
 
 A aplicação coleta logs de infraestrutura, transforma dados brutos em eventos estruturados, persiste essas informações, executa regras de detecção e gera **Alerts** e **Incidents** a partir de comportamentos suspeitos.
 
-O projeto foi desenvolvido com foco em compreender, na prática, como componentes de **Backend, processamento de logs, persistência, cache, detecção e correlação de eventos** podem trabalhar em conjunto.
+Além da detecção, o projeto possui recursos para **consulta, filtragem, correlação, gerenciamento de status, investigação de incidentes, registro de notas e métricas operacionais**.
+
+O projeto foi desenvolvido com foco em compreender como componentes de **Backend, processamento de logs, persistência, cache, detecção, correlação e gerenciamento de incidentes** podem trabalhar em conjunto.
 
 ---
 
@@ -15,9 +17,14 @@ O projeto foi desenvolvido com foco em compreender, na prática, como componente
 * [Arquitetura](#-arquitetura)
 * [Fluxo de dados](#-fluxo-de-dados)
 * [Detection Engine](#-detection-engine)
+* [Detection Rules](#-detection-rules)
 * [Alerts e Incidents](#-alerts-e-incidents)
+* [Investigação de Incidents](#-investigação-de-incidents)
+* [Dashboard e métricas](#-dashboard-e-métricas)
 * [Armazenamento](#-armazenamento)
 * [API](#-api)
+* [Specifications](#-specifications)
+* [Tratamento de exceções](#-tratamento-de-exceções)
 * [Testes](#-testes)
 * [Estrutura do projeto](#-estrutura-do-projeto)
 * [Tecnologias](#%EF%B8%8F-tecnologias)
@@ -44,13 +51,15 @@ Python Agent
   ▼
 Spring Boot API
   │
-  ├───────────────┐
-  ▼               ▼
-PostgreSQL       Redis
-  │               │
-  │               ├── Cooldown
-  │               ├── Estado temporário
-  │               └── Operações rápidas
+  ├──────────────────────┐
+  ▼                      ▼
+PostgreSQL              Redis
+  │                      │
+  │                      ├── Alert Cooldown
+  │                      └── Estado temporário
+  │
+  ▼
+Security Events
   │
   ▼
 Detection Engine
@@ -58,16 +67,20 @@ Detection Engine
   ├── Detection Rules
   │
   ▼
-Detection Result
+Detection Results
   │
   ▼
-Alert
+Alerts
   │
   ▼
-Incident
+Incidents
+  │
+  ├── Status
+  ├── Alerts relacionados
+  └── Investigation Notes
 ```
 
-A aplicação Java utiliza uma arquitetura baseada em separação de responsabilidades, com componentes específicos para:
+A aplicação Java utiliza separação de responsabilidades através de:
 
 * Controllers
 * Services
@@ -77,7 +90,7 @@ A aplicação Java utiliza uma arquitetura baseada em separação de responsabil
 * Detection Engine
 * Detection Rules
 * Exception Handling
-* Models
+* JPA Entities
 
 ---
 
@@ -110,9 +123,7 @@ O Python Agent monitora os logs e transforma as informações em um evento estru
 
 ### 3. Ingestão
 
-O evento é enviado através de HTTP/REST para a API Spring Boot.
-
-Endpoint principal:
+O evento é enviado através de HTTP/REST para a API Spring Boot:
 
 ```text
 POST /api/v1/events
@@ -128,7 +139,7 @@ source → APACHE
 IP     → sem espaços
 ```
 
-Também são aplicadas validações de campos obrigatórios e códigos HTTP.
+Também são aplicadas validações dos campos e dos códigos HTTP.
 
 ### 5. Persistência
 
@@ -136,67 +147,150 @@ O evento é armazenado no PostgreSQL.
 
 ### 6. Detecção
 
-Os eventos recentes são analisados pelo Detection Engine.
+Os eventos recentes são analisados pelo `DetectionEngine`.
 
 ### 7. Alert
 
-Quando uma regra identifica um comportamento suspeito, o sistema pode gerar um Alert.
+Quando uma regra identifica um comportamento suspeito, um Alert pode ser criado.
 
 ### 8. Incident
 
-Alerts relacionados podem ser associados a um Incident, permitindo agrupar ocorrências relacionadas.
+O Alert pode ser associado a um Incident existente ou gerar um novo Incident.
+
+### 9. Investigação
+
+O Incident pode ser atualizado durante a investigação e receber notas contendo observações do analista.
+
+```text
+Security Event
+      ↓
+Detection
+      ↓
+Alert
+      ↓
+Incident
+      ↓
+Investigation
+      ↓
+Resolution
+      ↓
+Closure
+```
 
 ---
 
 ## 🔎 Detection Engine
 
-O **Detection Engine** é responsável por analisar eventos de segurança e executar as regras de detecção.
+O **Detection Engine** é responsável por executar as regras de detecção disponíveis no sistema.
 
-As regras utilizam uma abstração comum:
+A arquitetura utiliza uma abstração comum:
 
 ```java
 public interface DetectionRule {
-    DetectionResult evaluate(SecurityEvent event);
+
+    String getName();
+
+    default String getDescription() {
+        return "Security detection rule";
+    }
+
+    DetectionResult evaluate(List<SecurityEvent> events);
 }
 ```
 
-O resultado da análise contém informações como:
+O `DetectionEngine` recebe uma coleção de eventos e executa as regras registradas pelo Spring:
 
 ```text
-Detection
-├── regra
-├── severidade
-├── descrição
-└── origem/IP relacionado
-```
-
-### Fluxo
-
-```text
-SecurityEvent
+Security Events
       │
       ▼
 DetectionEngine
       │
-      ├── DetectionRule
-      ├── DetectionRule
-      ├── DetectionRule
-      └── DetectionRule
+      ├── BruteForceRule
+      ├── PathTraversalRule
+      ├── SuspiciousStatusCodeRule
+      ├── SuspiciousMethodRule
+      └── HighErrorRateRule
       │
       ▼
 DetectionResult
-      │
-      ▼
-AlertService
 ```
 
-Essa abordagem permite adicionar novas regras sem concentrar toda a lógica de detecção em um único bloco condicional.
+O `DetectionResult` contém informações como:
+
+* Regra responsável pela detecção
+* Severidade
+* Descrição
+* IP relacionado
+* ID do evento que originou a detecção
+
+O ID do evento permite que o Alert seja associado ao **evento que efetivamente originou a detecção**, e não simplesmente ao último evento recebido.
+
+---
+
+## 🧠 Detection Rules
+
+Atualmente o projeto possui regras para diferentes comportamentos suspeitos.
+
+### Brute Force
+
+Detecta múltiplas tentativas de autenticação malsucedidas provenientes do mesmo endereço IP dentro de uma janela temporal.
+
+```text
+5 × HTTP 401
+      ↓
+mesmo IP
+      ↓
+janela de 5 minutos
+      ↓
+BRUTE_FORCE
+```
+
+### Suspicious Status Code
+
+Detecta requisições HTTP com código:
+
+```text
+401 Unauthorized
+```
+
+### Path Traversal
+
+Detecta padrões associados a tentativas de exploração de diretórios, incluindo:
+
+```text
+../
+..\
+```
+
+e padrões codificados em URL.
+
+### Suspicious Method
+
+Detecta métodos HTTP considerados suspeitos no contexto do monitoramento:
+
+```text
+TRACE
+CONNECT
+```
+
+### High Error Rate
+
+Detecta uma quantidade elevada de erros de servidor provenientes do mesmo endereço IP dentro de uma janela temporal.
+
+São considerados:
+
+```text
+500
+502
+503
+```
 
 ---
 
 ## 🚨 Alerts e Incidents
 
-O SentinelOps separa **detecção**, **alerta** e **incidente**.
+O SentinelOps separa os conceitos de **Detection**, **Alert** e **Incident**.
 
 ### Detection Result
 
@@ -208,7 +302,7 @@ Exemplo:
 Rule:        BRUTE_FORCE
 Severity:    HIGH
 Source IP:   192.168.0.10
-Description: Multiple failed login attempts
+Description: Multiple failed authentication attempts
 ```
 
 ### Alert
@@ -217,6 +311,7 @@ Representa uma ocorrência de segurança gerada a partir de uma detecção.
 
 Um Alert possui:
 
+* ID
 * Severidade
 * Regra
 * Descrição
@@ -225,23 +320,33 @@ Um Alert possui:
 * Incident relacionado
 * Data de criação
 
-Exemplo:
+Os status disponíveis são:
 
 ```text
-Detection Result
-      ↓
-Alert
-      ↓
-BRUTE_FORCE
-HIGH
 OPEN
+ACKNOWLEDGED
+RESOLVED
 ```
 
-### Cooldown
+O status pode ser atualizado através da API.
 
-O `AlertService` utiliza Redis para evitar a criação excessiva de alerts para a mesma regra e origem dentro de uma janela de tempo.
+```text
+PATCH /api/v1/alerts/{id}/status
+```
 
-Atualmente o cooldown padrão utilizado pelo serviço é de:
+Exemplo:
+
+```json
+{
+  "status": "ACKNOWLEDGED"
+}
+```
+
+### Alert Cooldown
+
+O `AlertService` utiliza Redis para evitar a criação excessiva de Alerts para a mesma regra e origem dentro de uma janela de tempo.
+
+O cooldown padrão é:
 
 ```text
 300 segundos
@@ -253,11 +358,13 @@ A chave é construída a partir da regra e do endereço IP:
 sentinelops:alert:BRUTE_FORCE:192.168.0.10
 ```
 
-### Incident
+O Redis mantém essa chave temporariamente utilizando TTL.
+
+---
+
+## 🚨 Incident
 
 Um Incident representa um agrupamento de Alerts relacionados.
-
-O sistema pode reutilizar um Incident aberto quando a regra e a origem forem compatíveis.
 
 Exemplo:
 
@@ -267,13 +374,225 @@ Alert 2 ─┼──► Incident
 Alert 3 ─┘
 ```
 
-Isso permite evoluir de uma simples coleção de alerts para uma estrutura mais próxima de um processo de investigação de segurança.
+O sistema utiliza a combinação da regra e da origem para identificar um Incident aberto relacionado.
+
+Um Incident possui:
+
+* ID
+* Título
+* Descrição
+* Severidade
+* Status
+* Data de criação
+* Data de atualização
+* Quantidade de Alerts relacionados
+* Notas de investigação
+
+Os status disponíveis são:
+
+```text
+OPEN
+INVESTIGATING
+RESOLVED
+CLOSED
+```
+
+O status pode ser atualizado através de:
+
+```text
+PATCH /api/v1/incidents/{id}/status
+```
+
+Exemplo:
+
+```json
+{
+  "status": "INVESTIGATING"
+}
+```
+
+---
+
+## 🔬 Investigação de Incidents
+
+O SentinelOps possui suporte a **Incident Notes**, permitindo registrar informações durante a investigação.
+
+Cada nota possui:
+
+* ID
+* Autor
+* Conteúdo
+* Data de criação
+* Incident relacionado
+
+Exemplo:
+
+```text
+Incident #10
+
+09:10 → Identificadas múltiplas requisições 401.
+09:25 → IP colocado em investigação.
+09:40 → Confirmado comportamento compatível com brute force.
+```
+
+### Criar nota
+
+```text
+POST /api/v1/incidents/{incidentId}/notes
+```
+
+Exemplo:
+
+```json
+{
+  "author": "Raphael",
+  "content": "Identificadas múltiplas tentativas de autenticação."
+}
+```
+
+### Listar notas
+
+```text
+GET /api/v1/incidents/{incidentId}/notes
+```
+
+### Remover nota
+
+```text
+DELETE /api/v1/incidents/{incidentId}/notes/{noteId}
+```
+
+A API verifica se a nota realmente pertence ao Incident informado antes de realizar a remoção.
+
+As notas possuem validação de:
+
+```text
+Author
+├── obrigatório
+└── máximo de 100 caracteres
+
+Content
+├── obrigatório
+└── máximo de 2000 caracteres
+```
+
+---
+
+## 📊 Dashboard e métricas
+
+O SentinelOps possui endpoints específicos para fornecer métricas agregadas do sistema.
+
+### Dashboard geral
+
+```text
+GET /api/v1/dashboard
+```
+
+Retorna informações como:
+
+```text
+Total de Events
+Total de Alerts
+Alerts abertos
+Alerts críticos
+Total de Incidents
+Incidents abertos
+Regras ativas
+```
+
+### Métricas temporais
+
+```text
+GET /api/v1/dashboard/metrics
+```
+
+Inclui:
+
+```text
+Eventos nas últimas 1 hora
+Alerts nas últimas 24 horas
+Incidents nas últimas 24 horas
+```
+
+### Alerts por regra
+
+```text
+GET /api/v1/dashboard/alerts-by-rule
+```
+
+Exemplo conceitual:
+
+```json
+[
+  {
+    "rule": "BRUTE_FORCE",
+    "count": 12
+  },
+  {
+    "rule": "PATH_TRAVERSAL",
+    "count": 5
+  }
+]
+```
+
+### Alerts por severidade
+
+```text
+GET /api/v1/dashboard/alerts-by-severity
+```
+
+### Events por endereço IP
+
+```text
+GET /api/v1/dashboard/events-by-source-ip
+```
+
+A consulta retorna os endereços IP com maior quantidade de eventos.
+
+### Alerts por endereço IP
+
+```text
+GET /api/v1/dashboard/alerts-by-source-ip
+```
+
+### Eventos por hora
+
+```text
+GET /api/v1/dashboard/events-by-hour
+```
+
+A consulta agrupa os eventos das últimas 24 horas por hora.
+
+Esses endpoints permitem futuramente construir uma interface visual para monitoramento do SentinelOps.
+
+---
+
+## 📋 Detection Rules API
+
+As regras disponíveis podem ser consultadas através de:
+
+```text
+GET /api/v1/rules
+```
+
+A resposta apresenta informações como:
+
+```json
+[
+  {
+    "name": "BRUTE_FORCE",
+    "description": "Detects multiple failed authentication attempts from the same IP within a short time window."
+  }
+]
+```
+
+Isso permite que uma futura interface consiga descobrir dinamicamente quais regras estão disponíveis no sistema.
 
 ---
 
 ## 💾 Armazenamento
 
-O projeto utiliza **PostgreSQL** e **Redis**, cada um com responsabilidades diferentes.
+O projeto utiliza **PostgreSQL** e **Redis**, com responsabilidades diferentes.
 
 ### PostgreSQL
 
@@ -285,15 +604,31 @@ Principais entidades:
 SecurityEvent
 Alert
 Incident
+IncidentNote
 ```
 
-O PostgreSQL mantém o histórico necessário para consultas, análise e investigação.
+O PostgreSQL mantém o histórico necessário para:
+
+* Consultas
+* Filtragem
+* Detecção
+* Correlação
+* Investigação
+* Métricas
+
+O Hibernate/JPA utiliza:
+
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
+
+para atualizar automaticamente a estrutura das tabelas durante o desenvolvimento.
 
 ### Redis
 
-Responsável principalmente por informações temporárias e operações rápidas.
+Responsável por informações temporárias e operações rápidas.
 
-No fluxo atual, é utilizado para o **cooldown de Alerts**.
+Atualmente é utilizado principalmente pelo mecanismo de **Alert Cooldown**.
 
 Exemplo:
 
@@ -301,21 +636,13 @@ Exemplo:
 sentinelops:alert:BRUTE_FORCE:192.168.0.10
                     │
                     ▼
-                 Redis
+                  Redis
                     │
-                  TTL
+                   TTL
                     │
                     ▼
-         evita alertas duplicados
+          evita Alert duplicado
 ```
-
-O Redis também permite evoluir futuramente o projeto para funcionalidades como:
-
-* Contadores
-* Janelas temporais
-* Rate limiting
-* Estado temporário de detecções
-* Cache
 
 ---
 
@@ -331,7 +658,7 @@ GET  /api/v1/events
 GET  /api/v1/events/{id}
 ```
 
-A consulta de eventos suporta filtros como:
+Consultas podem utilizar filtros como:
 
 ```text
 sourceip
@@ -341,13 +668,11 @@ from
 to
 ```
 
-Também suporta paginação:
+Também há suporte a paginação e ordenação:
 
 ```text
 ?page=0&size=20
 ```
-
-E ordenação:
 
 ```text
 ?sort=timestamp,desc
@@ -356,11 +681,12 @@ E ordenação:
 ### Alerts
 
 ```text
-GET /api/alerts
-GET /api/alerts/{id}
+GET   /api/v1/alerts
+GET   /api/v1/alerts/{id}
+PATCH /api/v1/alerts/{id}/status
 ```
 
-Filtros disponíveis:
+Filtros:
 
 ```text
 status
@@ -370,16 +696,15 @@ from
 to
 ```
 
-Também suporta paginação e ordenação.
-
 ### Incidents
 
 ```text
-GET /api/incidents
-GET /api/incidents/{id}
+GET   /api/v1/incidents
+GET   /api/v1/incidents/{id}
+PATCH /api/v1/incidents/{id}/status
 ```
 
-Filtros disponíveis:
+Filtros:
 
 ```text
 status
@@ -387,70 +712,86 @@ from
 to
 ```
 
-Também suporta paginação e ordenação.
-
-### Paginação
-
-As consultas utilizam o mecanismo de paginação do Spring Data:
+### Incident Notes
 
 ```text
-Page<T>
-Pageable
-Specification<T>
+POST   /api/v1/incidents/{incidentId}/notes
+GET    /api/v1/incidents/{incidentId}/notes
+DELETE /api/v1/incidents/{incidentId}/notes/{noteId}
 ```
 
-O tamanho padrão das consultas é de:
+### Detection Rules
 
 ```text
-20 registros
+GET /api/v1/rules
 ```
 
-com limite máximo configurado para:
+### Dashboard
 
 ```text
-100 registros
+GET /api/v1/dashboard
+GET /api/v1/dashboard/metrics
+GET /api/v1/dashboard/alerts-by-rule
+GET /api/v1/dashboard/alerts-by-severity
+GET /api/v1/dashboard/events-by-source-ip
+GET /api/v1/dashboard/alerts-by-source-ip
+GET /api/v1/dashboard/events-by-hour
 ```
 
 ---
 
-## 🧩 Specifications
+## 📄 Paginação e Specifications
 
-As consultas com filtros utilizam `JpaSpecificationExecutor` e Specifications específicas.
-
-Exemplo:
+As consultas utilizam os recursos do Spring Data:
 
 ```text
-SecurityEventSpecification
-├── sourceip
-├── method
-├── statuscode
-├── timestamp from
-└── timestamp to
+Page<T>
+Pageable
+JpaSpecificationExecutor
+Specification<T>
 ```
+
+Isso permite combinar diferentes filtros sem criar um método de repository para cada combinação possível.
+
+### SecurityEventSpecification
+
+Filtros relacionados a eventos:
 
 ```text
-AlertSpecification
-├── status
-├── severity
-├── rule
-├── createdAt from
-└── createdAt to
+sourceip
+method
+statuscode
+timestamp from
+timestamp to
 ```
+
+### AlertSpecification
+
+Filtros relacionados a Alerts:
 
 ```text
-IncidentSpecification
-├── status
-├── createdAt from
-└── createdAt to
+status
+severity
+rule
+createdAt from
+createdAt to
 ```
 
-Isso permite combinar filtros sem transformar os repositories em uma coleção de métodos específicos para cada combinação possível.
+### IncidentSpecification
+
+Filtros relacionados a Incidents:
+
+```text
+status
+createdAt from
+createdAt to
+```
 
 ---
 
 ## ⚠️ Tratamento de exceções
 
-A API possui um tratamento global de exceções através de `@RestControllerAdvice`.
+A API possui tratamento global de exceções através de `@RestControllerAdvice`.
 
 Exceções específicas incluem:
 
@@ -459,7 +800,7 @@ InvalidSecurityEventException
 ResourceNotFoundException
 ```
 
-As respostas seguem uma estrutura padronizada:
+Exemplo de resposta:
 
 ```json
 {
@@ -470,46 +811,47 @@ As respostas seguem uma estrutura padronizada:
 }
 ```
 
-Isso evita que detalhes internos da aplicação sejam expostos diretamente ao cliente.
+Isso mantém as respostas da API padronizadas e evita expor detalhes internos da aplicação diretamente ao cliente.
 
 ---
 
 ## 🧪 Testes
 
-O projeto possui testes unitários utilizando **JUnit 5** e **Mockito**.
+O projeto utiliza:
 
-Atualmente existem testes cobrindo componentes importantes da camada de serviços.
+* JUnit 5
+* Mockito
+
+A cobertura de testes está sendo ampliada conforme novas funcionalidades são implementadas.
+
+Entre os componentes que já possuem cobertura estão:
 
 ### AlertService
 
-Os testes cobrem:
+Incluindo cenários relacionados a:
 
-* Criação de Alert
-* Cooldown ativo
-* Cooldown disponível
-* Integração com IncidentService
+* Criação de Alerts
+* Cooldown
 * Busca por ID
-* Alert inexistente
 * Paginação
-* Filtro por Severity
-* Filtro por Rule
-* Validação de período
+* Filtros
+* Validação de períodos
+* Integração com IncidentService
 
 ### IncidentService
 
-Os testes cobrem:
+Incluindo cenários relacionados a:
 
-* Criação de Incident
-* Reutilização de Incident aberto
-* Associação de múltiplos Alerts
-* Separação por origem/IP
+* Criação de Incidents
+* Reutilização de Incidents abertos
+* Associação de Alerts
+* Separação por origem
 * Busca por ID
-* Incident inexistente
 * Paginação
-* Filtro por Status
-* Validação de período
+* Filtros
+* Validação de períodos
 
-O objetivo é ampliar gradualmente a cobertura conforme novas funcionalidades são implementadas.
+O projeto continua recebendo testes adicionais conforme novas funcionalidades são desenvolvidas.
 
 ---
 
@@ -526,8 +868,7 @@ SentinelOps/
 │   ├── start-python.bat
 │   ├── start-spring.bat
 │   ├── start-all.bat
-│   ├── stop-all.bat
-│
+│   └── stop-all.bat
 │
 ├── SentinelOps_Python/
 │   ├── ApacheLogLoader.py
@@ -554,8 +895,6 @@ SentinelOps/
 └── README.md
 ```
 
-A estrutura continua evoluindo conforme novos componentes são adicionados ao projeto.
-
 ---
 
 ## 🛠️ Tecnologias
@@ -566,10 +905,10 @@ A estrutura continua evoluindo conforme novos componentes são adicionados ao pr
 | **Spring Boot**     | API REST                       |
 | **Spring Data JPA** | Persistência e consultas       |
 | **JUnit 5**         | Testes                         |
-| **Mockito**         | Mocking e testes unitários     |
+| **Mockito**         | Mocking                        |
 | **Python**          | Coleta, parsing e normalização |
 | **PostgreSQL**      | Persistência                   |
-| **Redis**           | Estado temporário e cooldown   |
+| **Redis**           | Cooldown e estado temporário   |
 | **Apache**          | Fonte de logs                  |
 | **Linux**           | Ambiente de execução           |
 | **Git**             | Controle de versão             |
@@ -599,42 +938,60 @@ A estrutura continua evoluindo conforme novos componentes são adicionados ao pr
 * [x] Implementar `DetectionEngine`
 * [x] Sistema de severidade
 * [x] Brute Force Detection
-* [x] Suspicious Login Detection
-* [x] Request Rate Detection
-* [x] Suspicious User-Agent Detection
+* [x] Suspicious Status Code Detection
+* [x] Path Traversal Detection
+* [x] Suspicious Method Detection
+* [x] High Error Rate Detection
 * [x] Alert Management
-* [x] Cooldown de Alerts
+* [x] Alert Cooldown
 * [x] Correlation / Incidents
 * [x] Agrupamento de Alerts em Incidents
+* [x] Consulta das Detection Rules
+
+### Incident Management
+
+* [x] Status de Alerts
+* [x] Status de Incidents
+* [x] Investigation Notes
+* [x] Criar notas
+* [x] Consultar notas
+* [x] Remover notas
+* [x] Associar notas aos Incidents
+* [x] Exibir notas no Incident Response
+
+### Dashboard
+
+* [x] Dashboard geral
+* [x] Métricas temporais
+* [x] Alerts por regra
+* [x] Alerts por severidade
+* [x] Events por Source IP
+* [x] Alerts por Source IP
+* [x] Eventos por hora
+* [ ] Interface Web do Dashboard
+* [ ] Gráficos interativos
 
 ### Persistência e infraestrutura
 
-* [x] Implementar PostgreSQL
-* [x] Implementar Redis
-* [x] Implementar estado temporário
-* [x] Implementar cooldown de Alerts
-* [x] Rate limiting
-* [x] Janelas temporais avançadas
+* [x] PostgreSQL
+* [x] Redis
+* [x] Estado temporário
+* [x] Alert Cooldown
+* [ ] Rate limiting
+* [ ] Janelas temporais avançadas
 * [ ] Métricas de performance
+* [ ] Health checks da infraestrutura
+* [ ] Processo automatizado de setup para PostgreSQL e Redis
 
 ### Qualidade
 
-* [x] Testes unitários do AlertService
-* [x] Testes unitários do IncidentService
+* [x] Testes do AlertService
+* [x] Testes do IncidentService
 * [x] Testes do SecurityEventService
-* [x] Testes dos Detection Rules
-* [x] Testes dos Controllers
-* [ ] Aumentar cobertura geral
-
-### Interface
-
-* [ ] Dashboard
-* [ ] Visualização de Security Events
-* [ ] Visualização de Alerts
-* [ ] Investigação de Incidents
-* [ ] Métricas do sistema
-* [x] Filtros avançados
-* [x] Visualização temporal de eventos
+* [x] Testes das Detection Rules
+* [ ] Ampliar cobertura geral
+* [ ] Testes de integração
+* [ ] Testes dos novos recursos de Incident Notes
 
 ---
 
@@ -659,12 +1016,37 @@ PostgreSQL
   ↓
 Detection Engine
   ↓
+Detection Result
+  ↓
 Alert
   ↓
 Incident
+  ↓
+Investigation
+  ↓
+Resolution
 ```
 
-O projeto atualmente está concentrado no fortalecimento do backend, regras de detecção, correlação de eventos, tratamento de exceções e testes automatizados.
+O backend atualmente possui recursos de:
+
+```text
+✓ Ingestão de eventos
+✓ Persistência
+✓ Detecção
+✓ Alertas
+✓ Cooldown com Redis
+✓ Correlação em Incidents
+✓ Gerenciamento de status
+✓ Notas de investigação
+✓ Filtros
+✓ Paginação
+✓ Specifications
+✓ Dashboard de métricas
+✓ Consulta das regras
+✓ Tratamento global de exceções
+```
+
+O desenvolvimento continua focado no fortalecimento do backend e na evolução das funcionalidades de monitoramento e investigação.
 
 ---
 
@@ -679,6 +1061,8 @@ O SentinelOps foi criado como um laboratório prático para estudar a integraç�
 * Security Event Processing
 * Threat Detection
 * Event Correlation
+* Incident Management
+* Incident Investigation
 * REST APIs
 * Spring Boot
 * Spring Data JPA
@@ -686,7 +1070,6 @@ O SentinelOps foi criado como um laboratório prático para estudar a integraç�
 * Redis
 * TTL
 * Cooldown
-* Rate Limiting
 * Pagination
 * Specifications
 * DTOs
@@ -696,7 +1079,27 @@ O SentinelOps foi criado como um laboratório prático para estudar a integraç�
 * Backend Development
 * Security Engineering
 
-O objetivo não é apenas construir um CRUD, mas entender como uma pipeline de segurança pode coletar, processar, persistir, detectar e correlacionar eventos.
+O objetivo não é apenas construir um CRUD, mas compreender como uma pipeline de segurança pode:
+
+```text
+Coletar
+   ↓
+Processar
+   ↓
+Persistir
+   ↓
+Detectar
+   ↓
+Alertar
+   ↓
+Correlacionar
+   ↓
+Investigar
+   ↓
+Resolver
+   ↓
+Encerrar
+```
 
 ---
 
