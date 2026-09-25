@@ -114,24 +114,41 @@ public class SecurityEventService {
 	
 	@Transactional
 	public SecurityEvent receiveEvent(SecurityEventRequest request) {
-		
-		validate(request);
-		
-		SecurityEvent event = normalize(request);
-		
-		SecurityEvent savedEvent = repository.save(event);
-		
-		List<SecurityEvent> recentEvents = repository.findTop100ByOrderByTimestampDesc();
-		
-		List<DetectionResult> results = detectionEngine.analyze(recentEvents);
-		
-		for(DetectionResult result : results) {
-			
-			alertService.createAlert(result, savedEvent);
-			
-		}
-		
-		return savedEvent;
+
+	    validate(request);
+
+	    SecurityEvent event = normalize(request);
+
+	    SecurityEvent savedEvent = repository.save(event);
+
+	    List<SecurityEvent> recentEvents =
+	            repository.findTop100ByOrderByTimestampDesc();
+
+	    List<DetectionResult> results =
+	            detectionEngine.analyze(recentEvents);
+
+	    for (DetectionResult result : results) {
+
+	        if (result.securityEventId() == null) {
+	            continue;
+	        }
+
+	        SecurityEvent detectedEvent =
+	                repository.findById(result.securityEventId())
+	                        .orElseThrow(() ->
+	                                new IllegalStateException(
+	                                        "Security event not found for detection: "
+	                                                + result.securityEventId()
+	                                )
+	                        );
+
+	        alertService.createAlert(
+	                result,
+	                detectedEvent
+	        );
+	    }
+
+	    return savedEvent;
 	}
 	
 	@Transactional(readOnly = true)

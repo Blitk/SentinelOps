@@ -10,9 +10,9 @@ import com.sentinelops.model.SecurityEvent;
 import com.sentinelops.model.Severity;
 
 @Component
-public class SuspiciousStatusCodeRule implements DetectionRule {
+public class SuspiciousMethodRule implements DetectionRule {
 
-    private static final String RULE_NAME = "SuspiciousStatusCodeRule";
+    private static final String RULE_NAME = "SuspiciousMethodRule";
 
     @Override
     public String getName() {
@@ -21,7 +21,7 @@ public class SuspiciousStatusCodeRule implements DetectionRule {
     
     @Override
     public String getDescription() {
-        return "Detects unauthorized HTTP requests with status code 401.";
+        return "Detects suspicious HTTP methods such as TRACE and CONNECT.";
     }
 
     @Override
@@ -33,13 +33,16 @@ public class SuspiciousStatusCodeRule implements DetectionRule {
 
         return events.stream()
                 .filter(event -> event != null)
-                .filter(event -> event.getStatuscode() != null)
-                .filter(event -> event.getStatuscode() == 401)
+                .filter(event -> event.getMethod() != null)
+                .filter(event ->
+                        event.getMethod().equalsIgnoreCase("TRACE")
+                        || event.getMethod().equalsIgnoreCase("CONNECT"))
                 .findFirst()
                 .map(event -> DetectionResult.detected(
                         RULE_NAME,
                         Severity.MEDIUM,
-                        "Unathorized request detected.",
+                        "Suspicious HTTP method detected: "
+                                + event.getMethod(),
                         event.getSourceip(),
                         event.getId()
                 ))

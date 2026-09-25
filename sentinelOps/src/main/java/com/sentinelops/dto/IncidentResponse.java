@@ -1,10 +1,11 @@
 package com.sentinelops.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.sentinelops.model.Incident;
-import com.sentinelops.model.Severity;
 import com.sentinelops.model.IncidentStatus;
+import com.sentinelops.model.Severity;
 
 public record IncidentResponse(
         Long id,
@@ -14,10 +15,12 @@ public record IncidentResponse(
         IncidentStatus status,
         Instant createdAt,
         Instant updatedAt,
-        int alertCount
+        int alertCount,
+        List<IncidentNoteResponse> notes
 ) {
 
     public static IncidentResponse fromEntity(Incident incident) {
+
         return new IncidentResponse(
                 incident.getId(),
                 incident.getTitle(),
@@ -26,7 +29,11 @@ public record IncidentResponse(
                 incident.getStatus(),
                 incident.getCreatedAt(),
                 incident.getUpdatedAt(),
-                incident.getAlerts().size()
+                incident.getAlerts().size(),
+                incident.getNotes()
+                        .stream()
+                        .map(IncidentNoteResponse::fromEntity)
+                        .toList()
         );
     }
 }

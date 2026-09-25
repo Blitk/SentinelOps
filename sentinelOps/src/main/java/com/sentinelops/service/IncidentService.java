@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 
 import com.sentinelops.dto.IncidentResponse;
+import com.sentinelops.dto.IncidentStatusRequest;
 import com.sentinelops.exception.InvalidSecurityEventException;
 import com.sentinelops.exception.ResourceNotFoundException;
 import com.sentinelops.model.Incident;
@@ -26,6 +27,30 @@ public class IncidentService {
 
     public IncidentService(IncidentRepository repository) {
         this.repository = repository;
+    }
+    
+    @Transactional
+    public IncidentResponse updateStatus(
+            Long id,
+            IncidentStatusRequest request) {
+
+        Incident incident = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Incident not found with id: " + id
+                ));
+
+        if (request.status() == null) {
+            throw new InvalidSecurityEventException(
+                    "Incident status cannot be null"
+            );
+        }
+
+        incident.setStatus(request.status());
+        incident.setUpdateAt(Instant.now());
+
+        Incident savedIncident = repository.save(incident);
+
+        return IncidentResponse.fromEntity(savedIncident);
     }
 
     @Transactional

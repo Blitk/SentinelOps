@@ -332,6 +332,68 @@ class AlertServiceTest {
     }
     
     @Test
+    void shouldUseGlobalCooldownWhenSourceIpIsNull() {
+
+        DetectionResult resultWithoutIp = new DetectionResult(
+                true,
+                "BRUTE_FORCE",
+                Severity.HIGH,
+                "Multiple failed login attempts",
+                null
+        );
+
+        when(cooldownService.startCoolDown(
+                "sentinelops:alert:BRUTE_FORCE:global",
+                300
+        )).thenReturn(true);
+
+        when(repository.save(any(Alert.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Alert resultAlert =
+                alertService.createAlert(resultWithoutIp, event);
+
+        assertNotNull(resultAlert);
+
+        verify(cooldownService).startCoolDown(
+                "sentinelops:alert:BRUTE_FORCE:global",
+                300
+        );
+
+        verify(repository).save(any(Alert.class));
+    }
+    
+    @Test
+    void shouldUseGlobalCooldownWhenSourceIpIsBlank() {
+
+        DetectionResult resultWithoutIp = new DetectionResult(
+                true,
+                "BRUTE_FORCE",
+                Severity.HIGH,
+                "Multiple failed login attempts",
+                "   "
+        );
+
+        when(cooldownService.startCoolDown(
+                "sentinelops:alert:BRUTE_FORCE:global",
+                300
+        )).thenReturn(true);
+
+        when(repository.save(any(Alert.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Alert resultAlert =
+                alertService.createAlert(resultWithoutIp, event);
+
+        assertNotNull(resultAlert);
+
+        verify(cooldownService).startCoolDown(
+                "sentinelops:alert:BRUTE_FORCE:global",
+                300
+        );
+    }
+    
+    @Test
     void shouldRejectInvalidDateRange() {
 
         Instant from =

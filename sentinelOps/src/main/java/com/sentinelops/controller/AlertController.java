@@ -12,12 +12,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.sentinelops.dto.AlertResponse;
+import com.sentinelops.dto.AlertStatusRequest;
 import com.sentinelops.model.AlertStatus;
 import com.sentinelops.model.Severity;
 import com.sentinelops.service.AlertService;
 
 @RestController
-@RequestMapping("/api/alerts")
+@RequestMapping("/api/v1/alerts")
 public class AlertController {
 
     private final AlertService service;
@@ -25,7 +26,17 @@ public class AlertController {
     public AlertController(AlertService service) {
         this.service = service;
     }
+    
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<AlertResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestBody AlertStatusRequest request) {
 
+        return ResponseEntity.ok(
+                service.updateStatus(id, request)
+        );
+    }
+    
     @GetMapping
     public ResponseEntity<Page<AlertResponse>> findAll(
             @RequestParam(required = false) AlertStatus status,

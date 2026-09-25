@@ -240,6 +240,7 @@ class SecurityEventServiceTest {
         verifyNoInteractions(alertService);
     }
     
+    
     @Test
     void shouldCreateAlertsForMultipleDetections() {
 

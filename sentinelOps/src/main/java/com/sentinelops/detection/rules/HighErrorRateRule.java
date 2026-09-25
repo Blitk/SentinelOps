@@ -14,16 +14,13 @@ import com.sentinelops.model.SecurityEvent;
 import com.sentinelops.model.Severity;
 
 @Component
-public class BruteForceRule implements DetectionRule {
+public class HighErrorRateRule implements DetectionRule {
 
-    private static final String RULE_NAME = "BruteForceRule";
+    private static final String RULE_NAME = "HighErrorRateRule";
 
-    private static final int FAILURE_THRESHOLD = 5;
+    private static final int ERROR_THRESHOLD = 5;
 
     private static final long TIME_WINDOW_MINUTES = 5;
-
-    public BruteForceRule() {
-    }
 
     @Override
     public String getName() {
@@ -37,11 +34,12 @@ public class BruteForceRule implements DetectionRule {
             return DetectionResult.notDetected(RULE_NAME);
         }
 
-        Map<String, List<SecurityEvent>> failedAttemptsByIp =
+        Map<String, List<SecurityEvent>> errorsByIp =
                 events.stream()
                         .filter(event -> event != null)
                         .filter(event -> event.getStatuscode() != null)
-                        .filter(event -> event.getStatuscode() == 401)
+                        .filter(event -> isServerError(
+                                event.getStatuscode()))
                         .filter(event -> event.getSourceip() != null)
                         .filter(event -> event.getTimestamp() != null)
                         .collect(Collectors.groupingBy(
@@ -49,18 +47,18 @@ public class BruteForceRule implements DetectionRule {
                         ));
 
         for (Map.Entry<String, List<SecurityEvent>> entry
-                : failedAttemptsByIp.entrySet()) {
+                : errorsByIp.entrySet()) {
 
-            List<SecurityEvent> attempts = entry.getValue();
+            List<SecurityEvent> errors = entry.getValue();
 
-            attempts.sort((event1, event2) ->
+            errors.sort((event1, event2) ->
                     event1.getTimestamp()
                             .compareTo(event2.getTimestamp()));
 
-            for (int i = 0; i < attempts.size(); i++) {
+            for (int i = 0; i < errors.size(); i++) {
 
                 Instant windowStart =
-                        attempts.get(i).getTimestamp();
+                        errors.get(i).getTimestamp();
 
                 Instant windowEnd =
                         windowStart.plus(
@@ -68,8 +66,8 @@ public class BruteForceRule implements DetectionRule {
                                 ChronoUnit.MINUTES
                         );
 
-                List<SecurityEvent> eventsInWindow =
-                        attempts.stream()
+                List<SecurityEvent> errorsInWindow =
+                        errors.stream()
                                 .filter(event ->
                                         !event.getTimestamp()
                                                 .isBefore(windowStart))
@@ -78,24 +76,21 @@ public class BruteForceRule implements DetectionRule {
                                                 .isAfter(windowEnd))
                                 .toList();
 
-                long attemptsInWindow =
-                        eventsInWindow.size();
-
-                if (attemptsInWindow >= FAILURE_THRESHOLD) {
+                if (errorsInWindow.size() >= ERROR_THRESHOLD) {
 
                     SecurityEvent triggeringEvent =
-                            eventsInWindow.get(
-                                    eventsInWindow.size() - 1
+                            errorsInWindow.get(
+                                    errorsInWindow.size() - 1
                             );
 
                     return DetectionResult.detected(
                             RULE_NAME,
-                            Severity.HIGH,
-                            "Possible Brute-Force attack detected from IP "
+                            Severity.MEDIUM,
+                            "High server error rate detected from IP "
                                     + entry.getKey()
                                     + " with "
-                                    + attemptsInWindow
-                                    + " failed authentication attempts.",
+                                    + errorsInWindow.size()
+                                    + " server errors.",
                             entry.getKey(),
                             triggeringEvent.getId()
                     );
@@ -108,6 +103,13 @@ public class BruteForceRule implements DetectionRule {
     
     @Override
     public String getDescription() {
-        return "Detects multiple failed authentication attempts from the same IP within a short time window.";
+        return "Detects a high number of server errors from the same IP within a short time window.";
+    }
+
+    private boolean isServerError(Integer statusCode) {
+
+        return statusCode == 500
+                || statusCode == 502
+                || statusCode == 503;
     }
 }

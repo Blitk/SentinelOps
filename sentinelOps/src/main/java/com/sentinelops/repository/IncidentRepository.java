@@ -1,5 +1,6 @@
 package com.sentinelops.repository;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,5 +18,8 @@ public interface IncidentRepository extends JpaRepository<Incident, Long>, JpaSp
             String title
     );
     
+    long countByStatus(IncidentStatus status);
+
+    long countByCreatedAtGreaterThanEqual(Instant createdAt);
     
 }

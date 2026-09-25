@@ -6,7 +6,11 @@ import com.sentinelops.model.SecurityEvent;
 
 public interface DetectionRule {
 
-	String getName();
-	DetectionResult evaluate(List<SecurityEvent> events);
-	
+    String getName();
+
+    default String getDescription() {
+        return "Security detection rule";
+    }
+
+    DetectionResult evaluate(List<SecurityEvent> events);
 }

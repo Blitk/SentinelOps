@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sentinelops.detection.DetectionResult;
 import com.sentinelops.dto.AlertResponse;
+import com.sentinelops.dto.AlertStatusRequest;
 import com.sentinelops.exception.InvalidSecurityEventException;
 import com.sentinelops.exception.ResourceNotFoundException;
 import com.sentinelops.model.Alert;
@@ -159,6 +160,31 @@ public class AlertService {
                         "Alert not found with id: " + id));
 
         return AlertResponse.fromEntity(alert);
+    }
+    
+    
+    
+    @Transactional
+    public AlertResponse updateStatus(
+            Long id,
+            AlertStatusRequest request) {
+
+        Alert alert = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Alert not found with id: " + id
+                ));
+
+        if (request.status() == null) {
+            throw new InvalidSecurityEventException(
+                    "Alert status cannot be null"
+            );
+        }
+
+        alert.setStatus(request.status());
+
+        Alert savedAlert = repository.save(alert);
+
+        return AlertResponse.fromEntity(savedAlert);
     }
     
 }

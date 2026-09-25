@@ -96,6 +96,13 @@ public class Incident {
 	@OneToMany(mappedBy = "incident")
 	private List<Alert> alerts = new ArrayList<>();
 	
+	@OneToMany(
+	        mappedBy = "incident",
+	        cascade = CascadeType.ALL,
+	        orphanRemoval = true
+	)
+	private List<IncidentNote> notes = new ArrayList<>();
+	
 	public void addAlert(Alert alert) {
 
 	    if (!alerts.contains(alert)) {
@@ -111,6 +118,32 @@ public class Incident {
 
 	    if (alert.getIncident() == this) {
 	        alert.setIncident(null);
+	    }
+	}
+	
+	public List<IncidentNote> getNotes() {
+	    return notes;
+	}
+
+	public void setNotes(List<IncidentNote> notes) {
+	    this.notes = notes;
+	}
+
+	public void addNote(IncidentNote note) {
+
+	    if (!notes.contains(note)) {
+	        notes.add(note);
+	    }
+
+	    note.setIncident(this);
+	}
+
+	public void removeNote(IncidentNote note) {
+
+	    notes.remove(note);
+
+	    if (note.getIncident() == this) {
+	        note.setIncident(null);
 	    }
 	}
 	

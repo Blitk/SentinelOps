@@ -417,6 +417,91 @@ class IncidentServiceTest {
     }
     
     @Test
+    void shouldReturnNullWhenAlertIsNull() {
+
+        Incident result = incidentService.processAlert(null);
+
+        assertNull(result);
+
+        verifyNoInteractions(repository);
+    }
+    
+    @Test
+    void shouldUseUnknownWhenAlertHasNoSecurityEvent() {
+
+        Alert alertWithoutEvent = new Alert();
+
+        alertWithoutEvent.setRule("BRUTE_FORCE");
+        alertWithoutEvent.setSeverity(Severity.HIGH);
+        alertWithoutEvent.setStatus(AlertStatus.OPEN);
+        alertWithoutEvent.setSecurityEvent(null);
+
+        when(repository.findFirstByStatusAndTitleOrderByCreatedAtDesc(
+                IncidentStatus.OPEN,
+                "BRUTE_FORCE - unknown"
+        )).thenReturn(Optional.empty());
+
+        when(repository.save(any(Incident.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Incident result =
+                incidentService.processAlert(alertWithoutEvent);
+
+        assertNotNull(result);
+
+        assertEquals(
+                "BRUTE_FORCE - unknown",
+                result.getTitle()
+        );
+
+        assertEquals(
+                1,
+                result.getAlerts().size()
+        );
+
+        assertSame(
+                alertWithoutEvent,
+                result.getAlerts().get(0)
+        );
+
+        verify(repository).save(any(Incident.class));
+    }
+    
+    @Test
+    void shouldUseUnknownWhenSourceIpIsBlank() {
+
+        SecurityEvent eventWithoutIp = new SecurityEvent();
+        eventWithoutIp.setSourceip("   ");
+
+        Alert alertWithoutIp = new Alert();
+
+        alertWithoutIp.setRule("BRUTE_FORCE");
+        alertWithoutIp.setSeverity(Severity.HIGH);
+        alertWithoutIp.setStatus(AlertStatus.OPEN);
+        alertWithoutIp.setSecurityEvent(eventWithoutIp);
+
+        when(repository.findFirstByStatusAndTitleOrderByCreatedAtDesc(
+                IncidentStatus.OPEN,
+                "BRUTE_FORCE - unknown"
+        )).thenReturn(Optional.empty());
+
+        when(repository.save(any(Incident.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Incident result =
+                incidentService.processAlert(alertWithoutIp);
+
+        assertNotNull(result);
+
+        assertEquals(
+                "BRUTE_FORCE - unknown",
+                result.getTitle()
+        );
+
+        verify(repository).save(any(Incident.class));
+    }
+    
+    @Test
     void shouldRejectInvalidDateRange() {
 
         Instant from =

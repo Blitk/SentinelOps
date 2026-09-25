@@ -10,11 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.sentinelops.dto.IncidentResponse;
+import com.sentinelops.dto.IncidentStatusRequest;
 import com.sentinelops.model.IncidentStatus;
 import com.sentinelops.service.IncidentService;
 
 @RestController
-@RequestMapping("/api/incidents")
+@RequestMapping("/api/v1/incidents")
 public class IncidentController {
 
     private final IncidentService service;
@@ -22,7 +23,17 @@ public class IncidentController {
     public IncidentController(IncidentService service) {
         this.service = service;
     }
+    
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<IncidentResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestBody IncidentStatusRequest request) {
 
+        return ResponseEntity.ok(
+                service.updateStatus(id, request)
+        );
+    }
+    
     @GetMapping
     public ResponseEntity<Page<IncidentResponse>> findAll(
             @RequestParam(required = false) IncidentStatus status,
