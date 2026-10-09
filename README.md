@@ -1,5 +1,9 @@
 # 🛡️ SentinelOps
 
+## Linguagens utilizadas
+
+![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=Blitk&repo=SentinelOps&layout=compact&theme=github_dark)
+
 **Mini SIEM para coleta, processamento, detecção e gerenciamento de eventos de segurança.**
 
 O **SentinelOps** é um projeto prático de Backend, Cybersecurity e Security Engineering desenvolvido para explorar, na prática, a construção de uma pipeline de monitoramento e detecção de eventos de segurança.
