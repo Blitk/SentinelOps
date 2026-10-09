@@ -1,5 +1,5 @@
 # 🛡️ SentinelOps
-
+![logo](5DE9C8F2-1E34-454C-9B18-36EFD942B1BC.png)
 
 **Mini SIEM para coleta, processamento, detecção e gerenciamento de eventos de segurança.**
 
