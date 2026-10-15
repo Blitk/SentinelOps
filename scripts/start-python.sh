@@ -20,4 +20,4 @@ fi
 echo "[INFO] Iniciando Python Agent..."
 echo
 
-python3 SentinelOps.py -lp 8080
+python3 SentinelOps.py -lp ../testTools/exemplo.log
