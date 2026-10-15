@@ -17,6 +17,6 @@ if not exist "SentinelOps.py" (
 echo [INFO] Iniciando Python Agent...
 echo.
 
-python SentinelOps.py -lp 8080
+python SentinelOps.py -lp ..\testTools\exemplo.log
 
 pause
